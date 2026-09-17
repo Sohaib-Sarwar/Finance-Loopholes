@@ -1,0 +1,37 @@
+# Jekyll configuration for the GitHub Pages deployment
+# (.github/workflows/jekyll-gh-pages.yml).
+#
+# There is no Jekyll templating in this project: the site published at the
+# repository root is a compiled Vite build (see scripts/publish-to-root.mjs),
+# and Jekyll copies those files through untouched because none of them carry
+# YAML front matter. This file exists only to keep development sources out of
+# the published output.
+#
+# When Pages is instead set to "Deploy from a branch", Jekyll is skipped
+# entirely thanks to the committed .nojekyll marker, and the same root build
+# is served directly. Both modes therefore serve identical files.
+
+title: Combined MF + Bank ROI Calculator
+description: >-
+  Mutual Fund and Bank savings ROI analytics with an exact fixed weekly
+  bank average-balance methodology.
+
+exclude:
+  - app/
+  - scripts/
+  - tests/
+  - src-assets/
+  - node_modules/
+  - dist/
+  - package.json
+  - package-lock.json
+  - tsconfig.json
+  - vite.config.ts
+  - logic.cpp
+  - logo.png
+  - TODO.md
+
+# Keep Jekyll's own housekeeping out of the way of the built asset folders.
+keep_files:
+  - assets
+  - icons

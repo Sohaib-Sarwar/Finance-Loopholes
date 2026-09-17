@@ -1,21 +1,27 @@
-name: Deploy to GitHub Pages
+# Continuous integration only — this workflow does NOT deploy.
+#
+# GitHub Pages accepts exactly one deployment source, and this repository
+# publishes through `jekyll-gh-pages.yml`, which serves the compiled site
+# committed at the repository root (see scripts/publish-to-root.mjs). Two
+# workflows both calling actions/deploy-pages would contend for the same
+# `pages` concurrency group and one of them would always fail.
+#
+# What this job protects against is the root build drifting out of sync with
+# the sources in app/: it rebuilds from scratch and fails if the committed
+# output no longer matches.
+name: CI
 
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,24 +42,14 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
-      - name: Generate icons
-        run: npm run icons
-
       - name: Build
         run: npm run build
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Check the committed root build is up to date
+        run: |
+          npm run publish:root
+          if [ -n "$(git status --porcelain -- index.html manifest.webmanifest registerSW.js sw.js assets icons)" ]; then
+            echo "::error::The committed root build is stale. Run 'npm run release' and commit the result."
+            git status --porcelain -- index.html manifest.webmanifest registerSW.js sw.js assets icons
+            exit 1
+          fi

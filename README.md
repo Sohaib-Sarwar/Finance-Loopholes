@@ -324,18 +324,23 @@ git add -A && git commit -m "…" && git push
 
 Pages picks it up automatically — **no repository settings change required**.
 
-### Optional: GitHub Actions deployment instead
+### Workflows
 
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) type-checks,
-tests, builds and deploys `dist/` through `actions/deploy-pages`. It only
-works if **Settings → Pages → Source** is switched to **GitHub Actions**; in
-the default branch mode its deploy step fails by design, because Pages will
-not accept an Actions deployment. Pick one mode or the other:
+Pages accepts exactly one deployment source, so exactly one workflow deploys:
 
-| Pages source setting | What serves the site | Committed root build needed? |
-|---|---|---|
-| Deploy from a branch → `main` → `/ (root)` *(current)* | the committed root build | yes |
-| GitHub Actions | `deploy.yml` | no |
+| Workflow | Role |
+|---|---|
+| [`jekyll-gh-pages.yml`](.github/workflows/jekyll-gh-pages.yml) | **Deploys.** Runs Jekyll over the repository root and publishes it. Because the root already holds the compiled site and none of it carries YAML front matter, Jekyll copies it through unchanged. [`_config.yml`](_config.yml) keeps `app/`, `tests/`, `scripts/` and build configs out of the published output. |
+| [`deploy.yml`](.github/workflows/deploy.yml) | **CI only — never deploys.** Type-checks, tests, rebuilds from `app/`, and fails if the committed root build has drifted out of sync with the sources. |
+
+Both Pages modes end up serving the same files:
+
+| Pages source setting | What serves the site |
+|---|---|
+| GitHub Actions | `jekyll-gh-pages.yml` publishes the committed root build |
+| Deploy from a branch → `main` → `/ (root)` | the committed root build, with Jekyll skipped via `.nojekyll` |
+
+So the site works either way, and switching between them needs no code change.
 
 ## 12. Local Development / Testing Instructions
 
