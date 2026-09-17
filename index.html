@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Combined MF + Bank ROI Calculator</title>
+    <meta
+      name="description"
+      content="Production-grade Mutual Fund + Bank ROI analytics calculator with an exact fixed weekly bank average-balance methodology."
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon-180.png" />
+
+    <link rel="stylesheet" href="src/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="app-header">
+      <div class="app-header__inner">
+        <div class="brand">
+          <img class="brand__logo" src="logo.png" alt="" width="36" height="36" />
+          <div class="brand__text">
+            <span class="brand__title">MF + Bank ROI Calculator</span>
+            <span class="brand__subtitle">Combined Yield Analytics</span>
+          </div>
+        </div>
+
+        <nav class="quick-nav" aria-label="Section navigation">
+          <a href="#inputs">Inputs</a>
+          <a href="#overview">Overview</a>
+          <a href="#breakdown">Breakdown</a>
+          <a href="#comparison">Comparison</a>
+          <a href="#cumulative">Cumulative</a>
+          <a href="#statement">Statement</a>
+          <a href="#basis">Methodology</a>
+        </nav>
+
+        <button id="install-button" class="btn btn--install" type="button" hidden>
+          Install app
+        </button>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="hero">
+        <div class="hero__inner">
+          <h1>Combined Mutual Fund + Bank ROI Calculator</h1>
+          <p>
+            Enter your capital and rates to see mutual fund returns, bank
+            savings returns (using a fixed weekly closing-balance model), and
+            the combined result — computed and broken down by day, week,
+            month and year.
+          </p>
+        </div>
+      </section>
+
+      <section id="inputs" class="panel" aria-labelledby="inputs-heading">
+        <h2 id="inputs-heading">Inputs</h2>
+        <form id="calculator-form" novalidate>
+          <div class="field">
+            <label for="capital">Capital (PKR)</label>
+            <input
+              id="capital"
+              name="capital"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              placeholder="e.g. 1000000"
+              aria-describedby="capital-error"
+            />
+            <p id="capital-error" class="field-error" role="alert" aria-live="polite"></p>
+          </div>
+
+          <div class="field">
+            <label for="mfRate">Mutual Fund annual return (%)</label>
+            <input
+              id="mfRate"
+              name="mfRate"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              placeholder="0 – 100"
+              aria-describedby="mfRate-error"
+            />
+            <p id="mfRate-error" class="field-error" role="alert" aria-live="polite"></p>
+          </div>
+
+          <div class="field">
+            <label for="mfTax">Mutual Fund tax (%)</label>
+            <input
+              id="mfTax"
+              name="mfTax"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              placeholder="0 – 100"
+              aria-describedby="mfTax-error"
+            />
+            <p id="mfTax-error" class="field-error" role="alert" aria-live="polite"></p>
+          </div>
+
+          <div class="field">
+            <label for="bankRate">Bank Savings annual rate (%)</label>
+            <input
+              id="bankRate"
+              name="bankRate"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              placeholder="0 – 100"
+              aria-describedby="bankRate-error"
+            />
+            <p id="bankRate-error" class="field-error" role="alert" aria-live="polite"></p>
+          </div>
+
+          <div class="field">
+            <label for="bankTax">Bank tax (%)</label>
+            <input
+              id="bankTax"
+              name="bankTax"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              placeholder="0 – 100"
+              aria-describedby="bankTax-error"
+            />
+            <p id="bankTax-error" class="field-error" role="alert" aria-live="polite"></p>
+          </div>
+        </form>
+        <p class="hint">
+          Values recalculate automatically as you type. Percentages must be
+          between 0 and 100 (inclusive); capital must be a finite number
+          greater than 0.
+        </p>
+      </section>
+
+      <div id="results" class="results" hidden>
+        <section id="overview" class="panel" aria-labelledby="overview-heading">
+          <h2 id="overview-heading">Overview</h2>
+          <div id="kpi-grid" class="kpi-grid"></div>
+        </section>
+
+        <section id="bank-balance" class="panel" aria-labelledby="bank-balance-heading">
+          <h2 id="bank-balance-heading">Bank Average Balance Methodology</h2>
+          <p class="section-note">
+            Fixed weekly closing-balance model — not a capital-weighted or
+            portfolio-weighted bank calculation.
+          </p>
+          <div id="bank-balance-table" class="data-table-wrap"></div>
+        </section>
+
+        <section id="breakdown" class="panel" aria-labelledby="breakdown-heading">
+          <h2 id="breakdown-heading">Daily / Weekly / Monthly / Annual Breakdown</h2>
+          <div id="breakdown-table" class="data-table-wrap"></div>
+        </section>
+
+        <section id="comparison" class="panel" aria-labelledby="comparison-heading">
+          <h2 id="comparison-heading">MF vs Bank vs Combined Comparison</h2>
+          <p class="section-note">
+            PKR and percentage difference between Mutual Fund and Bank net
+            returns, for each period.
+          </p>
+          <div class="chart-card">
+            <canvas id="comparison-chart" role="img" aria-label="Bar chart comparing Mutual Fund, Bank and Combined returns"></canvas>
+          </div>
+          <div id="comparison-table" class="data-table-wrap"></div>
+        </section>
+
+        <section id="cumulative" class="panel" aria-labelledby="cumulative-heading">
+          <h2 id="cumulative-heading">
+            Cumulative Return Visualization
+            <span class="badge badge--projection">Projection</span>
+          </h2>
+          <p class="section-note">
+            Linear projection only — periodic net return multiplied by the
+            number of elapsed periods. No compounding is applied, consistent
+            with the source calculation model.
+          </p>
+          <div class="cumulative-controls">
+            <div class="field field--inline">
+              <label for="cumulative-period">Period unit</label>
+              <select id="cumulative-period">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly" selected>Monthly</option>
+                <option value="annual">Annual</option>
+              </select>
+            </div>
+            <div class="field field--inline">
+              <label for="cumulative-count">Number of periods</label>
+              <input id="cumulative-count" type="range" min="2" max="36" step="1" value="12" />
+              <output id="cumulative-count-output" for="cumulative-count">12</output>
+            </div>
+          </div>
+          <div class="chart-card">
+            <canvas id="cumulative-chart" role="img" aria-label="Line chart of cumulative projected net returns"></canvas>
+          </div>
+        </section>
+
+        <section id="statement" class="panel" aria-labelledby="statement-heading">
+          <h2 id="statement-heading">
+            Accountant-Style Statement
+            <span class="badge badge--calculated">Calculated</span>
+          </h2>
+          <p class="section-note">
+            Mirrors the structure and figures of the original calculation
+            report, for direct line-by-line comparison.
+          </p>
+          <div class="statement-scroll">
+            <pre id="statement-output" class="statement"></pre>
+          </div>
+        </section>
+      </div>
+
+      <section id="basis" class="panel" aria-labelledby="basis-heading">
+        <h2 id="basis-heading">Calculation Basis</h2>
+        <ol class="basis-list">
+          <li>Bank average = 7-day closing balance average.</li>
+          <li>MF return is applied to the full entered capital.</li>
+          <li>Bank return is applied to the calculated average bank balance.</li>
+          <li>Gross return is calculated before tax.</li>
+          <li>Tax is calculated on gross profit.</li>
+          <li>Net return = gross profit − tax.</li>
+          <li>Monthly = annual / 12.</li>
+          <li>Weekly = annual / 52.</li>
+          <li>Daily = annual / 365.</li>
+        </ol>
+
+        <div class="callout callout--warning">
+          <strong>Important:</strong> The combined ROI follows the exact
+          structure of the original calculation model. It is
+          <strong>not a conventional portfolio-weighted ROI</strong> unless
+          the capital allocation between the Mutual Fund and the Bank
+          savings account is explicitly defined. MF return is computed on
+          the full entered capital, and Bank return is computed on the
+          fixed average bank balance — the two are added, not weighted by
+          how capital is actually split between them.
+        </div>
+
+        <div class="callout callout--info">
+          <strong>Strategy context (conceptual model, not guaranteed):</strong>
+          This calculator supports evaluating a banking &amp; mutual-fund
+          yield strategy that combines money-market fund returns with 24/7
+          redemption, strategically maintaining the required balance in a
+          savings account around the bank's profit calculation/recording
+          time. The same capital can potentially generate returns from both
+          the money-market fund and the bank savings account, subject to
+          each institution's rules, cut-off times, eligibility and
+          transaction settlement. Actual outcomes depend entirely on the
+          applicable bank/fund rules, rates, taxes, settlement timing,
+          redemption availability and eligibility. This is not financial
+          advice and double returns are not guaranteed. See the README for
+          full details.
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>
+        Calculation logic ported exactly from the original C++ reference
+        implementation. This tool is provided for informational purposes
+        only and does not constitute financial advice.
+      </p>
+    </footer>
+
+    <script type="module" src="src/main.ts"></script>
+  </body>
+</html>
