@@ -1,8 +1,11 @@
 node_modules/
-dist/
-dist-ssr/
 *.local
 *.tsbuildinfo
+
+# Intermediate Vite output. The published site is copied from here to the
+# repository root by `npm run publish:root` and IS committed (GitHub Pages
+# serves this branch's root verbatim).
+dist/
 
 # Editor
 .vscode/*

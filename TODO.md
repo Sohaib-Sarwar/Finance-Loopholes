@@ -2,6 +2,39 @@
 
 Source of truth: `logic.cpp`. This checklist is maintained manually (no subagents used for this build), per project instructions.
 
+## 0. v2 — UI rebuild & Pages deployment fix
+- [x] Diagnose the broken deployment: Pages was in branch-root mode serving raw
+      TypeScript (`src/main.ts` sent as `video/mp2t`, so the module script was
+      blocked and nothing ran); the Actions workflow's deploy step failed
+      because Pages was not set to "GitHub Actions" source.
+- [x] Restructure: source moved to `app/`, production build published to the
+      repository root (`scripts/publish-to-root.mjs`) + `.nojekyll`, so the
+      default branch-root Pages mode serves the compiled app with **no
+      repository settings change**.
+- [x] Design system rewrite: token-based light/dark themes, flat surfaces,
+      hairline borders, elevation scale, no gradients.
+- [x] Typography: self-hosted Inter Variable + JetBrains Mono Variable
+      (no CDN, works offline); non-Latin subsets excluded from the precache.
+- [x] Icons: Lucide (the set `react-icons/lu` wraps), imported by name and
+      inlined as SVG.
+- [x] Chart palette validated for CVD separation / lightness band / surface
+      contrast in both light and dark modes.
+- [x] Comparison chart reworked to horizontal bars for one selected period —
+      the previous grouped bars made daily/weekly invisible next to annual.
+- [x] Mobile: bottom tab bar with scroll-spy, tables replaced by stacked
+      cards, two-column rate/tax fields, safe-area insets.
+- [x] Mobile install sheet (real `beforeinstallprompt`, 7-day snooze) plus an
+      iOS Add-to-Home-Screen guide; no fake install dialog anywhere.
+- [x] Theme toggle (light / dark / system) with persistence; charts repaint.
+- [x] Asset weight: icons/brand mark palette-quantised — offline precache
+      reduced from ~1.2 MB to ~600 KB.
+- [x] Accessibility: accent and control-border tokens re-stepped to clear
+      WCAG AA text contrast (4.5:1) and non-text contrast (3:1).
+- [x] Verified live in real Chrome via the browser extension: service worker
+      registers/activates/precaches, install prompt fires, theme toggle,
+      segmented controls, projection slider, validation errors, zero
+      horizontal overflow at 320/390/768/1440 px.
+
 ## 1. Analysis
 - [x] Read and fully understand `logic.cpp` (inputs, validation, bank model, formulas, output sections, disclaimers).
 - [x] Inspect project directory (found `logic.cpp`, `logo.png`).

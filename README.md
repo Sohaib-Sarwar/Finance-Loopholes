@@ -53,12 +53,18 @@ for static hosting on GitHub Pages under a repository subpath.
 - **Cumulative-return visualization** — a linear (non-compounding)
   projection chart over a selectable number of days/weeks/months/years.
 - **Clear "Calculated" vs "Projection" labeling** throughout the UI.
-- **Installable PWA** with an offline application shell, using the real
-  browser install mechanism (no fake install popups).
+- **Installable PWA** with an offline application shell, a mobile install
+  sheet and an iOS Add-to-Home-Screen guide — all driven by the real browser
+  install mechanism, never a fake dialog.
+- **Light / dark / system theming** with a header toggle, persisted per
+  device; charts repaint against the active surface.
 - **Zero-server static site** — builds to plain HTML/CSS/JS, deployable to
   GitHub Pages with no backend.
-- **Accessible, responsive, minimalist design** — no emoji, no clutter,
-  works cleanly from small phones to wide desktops.
+- **Accessible, responsive, minimalist design** — Inter + JetBrains Mono
+  (self-hosted, no CDN), Lucide icon set, no emoji, no gradients. Wide data
+  tables become stacked cards on phones rather than scrolling sideways.
+- **Design-system palette** — the categorical chart colors are validated for
+  colour-vision deficiency separation and surface contrast in both themes.
 
 ## 3. Exact Calculation Methodology
 
@@ -241,61 +247,95 @@ produces.
 
 ## 10. PWA / Mobile Functionality
 
-- `public/manifest.webmanifest`-equivalent config lives in
-  [`vite.config.ts`](vite.config.ts) via `vite-plugin-pwa`, generating:
-  - App name/short name, `start_url`, `scope`, `display: standalone`.
-  - 192×192 and 512×512 icons (both regular and maskable), an
-    apple-touch-icon, and favicons — all generated from `logo.png` via
-    [`scripts/generate-icons.mjs`](scripts/generate-icons.mjs).
-- A generated service worker (Workbox `generateSW` strategy) precaches the
-  app shell and serves it offline, with a navigation fallback to
-  `index.html` so client-side refreshes keep working offline.
-- The **Install app** button in the header only appears when the browser
-  actually fires a real `beforeinstallprompt` event (Chromium-based
-  browsers) — there is no custom/fake install modal. It calls the native
-  `prompt()` API and hides itself once the app is installed or already
-  running standalone.
-- The layout is mobile-first and responsive: single-column stacked cards
-  and tables below ~560px, multi-column KPI grid and form above that. Wide
-  data tables and the monospace statement scroll horizontally **inside
-  their own bordered container** — the page itself never scrolls
-  horizontally.
+The manifest config lives in [`vite.config.ts`](vite.config.ts) via
+`vite-plugin-pwa`, generating:
+
+- App name/short name, `start_url`, `scope`, `display: standalone`.
+- 192×192 and 512×512 icons (regular and maskable), an apple-touch-icon and
+  favicons — all produced from `logo.png` by
+  [`scripts/generate-icons.mjs`](scripts/generate-icons.mjs).
+- A Workbox (`generateSW`) service worker that precaches the app shell and
+  serves it offline, with a navigation fallback to `index.html` so refreshes
+  keep working offline. Non-Latin font subsets are deliberately excluded from
+  the precache; browsers fetch those ranges only if a page ever needs them.
+
+**Install experience** — everything is driven by the browser's own machinery:
+
+- The header **Install** button appears only after a genuine
+  `beforeinstallprompt` event fires, and calls the native `prompt()`.
+- On phones an **install sheet** slides up shortly after arrival offering the
+  same real prompt, with a "Not now" action that snoozes it for 7 days
+  (stored in `localStorage`).
+- On iOS Safari — which never fires `beforeinstallprompt` and offers no
+  programmatic install — the sheet shows the actual **Share → Add to Home
+  Screen** steps instead of a button that could not work.
+- Nothing anywhere simulates an install dialog.
+
+**Mobile layout** — mobile-first, and specifically built so nothing has to be
+scrolled sideways to be read:
+
+- A fixed bottom tab bar (Inputs / Overview / Compare / Report) with
+  scroll-spy highlighting, honouring `env(safe-area-inset-bottom)`.
+- Wide data tables are **replaced**, not squeezed: below 720px each table
+  renders as stacked label/value rows grouped per instrument.
+- The comparison chart plots one selected period as horizontal bars, so daily
+  figures stay legible instead of being flattened by the annual bar.
+- Only the monospace statement scrolls horizontally, inside its own bordered
+  container. The page itself never scrolls horizontally at any width tested
+  (320 / 390 / 768 / 1440 px).
 
 ## 11. GitHub Pages Deployment Instructions
 
-This project is designed to deploy from **any** path, including a GitHub
-Pages project subpath like `https://<username>.github.io/<repository>/`,
-with no code changes:
+### How this repository is laid out for Pages
 
-- `vite.config.ts` uses `base: "./"` — every emitted asset reference is
-  relative to `index.html`, not rooted at `/`.
-- The PWA manifest uses `start_url: "."` and `scope: "./"` (relative to the
-  manifest's own URL), and the service worker registers with a relative
-  scope and a relative `navigateFallback`.
+GitHub Pages' default mode — **Deploy from a branch → `main` → `/ (root)`** —
+copies the branch verbatim and runs no build step. Serving raw sources there
+does not work: Pages sends `src/main.ts` as `video/mp2t`, and browsers refuse
+to execute a module script with a non-JavaScript content type, so the page
+renders but nothing runs.
 
-### Automatic deployment (recommended)
+This repository therefore keeps **source in `app/`** and commits the
+**compiled site at the repository root**, so the files Pages finds at the
+root are already the built app:
 
-A ready-made workflow is included at
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). To enable it:
-
-1. Push this repository to GitHub (e.g. `Sohaib-Sarwar/Finance-Loopholes`).
-2. In the repository settings, go to **Settings → Pages** and set
-   **Source** to **GitHub Actions**.
-3. Push to `main` (or run the workflow manually from the **Actions** tab).
-4. The workflow type-checks, runs the unit tests, generates icons, builds,
-   and deploys `dist/` to GitHub Pages automatically.
-5. The site will be live at `https://<username>.github.io/<repository>/`.
-
-### Manual deployment
-
-```bash
-npm ci
-npm run icons     # only needed if public/icons/ is not already committed
-npm run build      # outputs to dist/
+```
+/index.html, /assets/, /icons/, /manifest.webmanifest, /sw.js …   ← built, committed
+/app/…                                                            ← source
 ```
 
-Publish the contents of `dist/` to the `gh-pages` branch (or any static
-host) — no server-side configuration is required.
+A `.nojekyll` marker is published alongside it so Pages serves the directory
+verbatim instead of running it through Jekyll.
+
+Path-independence is preserved throughout, so the same build works at a
+domain root or any project subpath:
+
+- `vite.config.ts` uses `base: "./"` — every emitted reference is relative to
+  `index.html`, never rooted at `/`.
+- The manifest uses `start_url: "."` and `scope: "./"` (resolved against the
+  manifest's own URL), and the service worker registers with a relative scope
+  and a relative `navigateFallback`.
+
+### Publishing a change
+
+```bash
+npm run release     # build + copy the site to the repository root
+git add -A && git commit -m "…" && git push
+```
+
+Pages picks it up automatically — **no repository settings change required**.
+
+### Optional: GitHub Actions deployment instead
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) type-checks,
+tests, builds and deploys `dist/` through `actions/deploy-pages`. It only
+works if **Settings → Pages → Source** is switched to **GitHub Actions**; in
+the default branch mode its deploy step fails by design, because Pages will
+not accept an Actions deployment. Pick one mode or the other:
+
+| Pages source setting | What serves the site | Committed root build needed? |
+|---|---|---|
+| Deploy from a branch → `main` → `/ (root)` *(current)* | the committed root build | yes |
+| GitHub Actions | `deploy.yml` | no |
 
 ## 12. Local Development / Testing Instructions
 
@@ -303,58 +343,72 @@ Requirements: Node.js 20+.
 
 ```bash
 npm install
-npm run icons      # generates public/icons/* from src-assets/logo.png (run once, or whenever the logo changes)
-npm run dev         # starts the Vite dev server (PWA/service worker is disabled in dev mode)
-npm run test        # runs the Vitest unit-test suite
+npm run icons       # regenerate icons + brand mark from src-assets/logo.png (only when the logo changes)
+npm run dev         # Vite dev server (service worker disabled in dev)
+npm run test        # Vitest unit-test suite
 npm run typecheck   # strict TypeScript check
-npm run build        # production build to dist/
-npm run preview      # serve the production build locally
+npm run build       # production build to dist/
+npm run release     # build, then publish the site to the repository root
 ```
 
-To test the production build the way GitHub Pages actually serves it (from
-a subpath, with the service worker active), build then serve `dist/` from a
-subdirectory named after the repository, e.g.:
+To test the production build the way GitHub Pages actually serves it (from a
+repository subpath, with the service worker active), serve the built root
+from a directory named after the repository:
 
 ```bash
-npm run build
+npm run release
 mkdir -p /tmp/pages-root/Finance-Loopholes
 cp -r dist/. /tmp/pages-root/Finance-Loopholes/
 cd /tmp/pages-root && python3 -m http.server 8080
 # open http://localhost:8080/Finance-Loopholes/
 ```
 
+Note that a service worker caches the app shell, so after deploying a change
+a previously-visited browser may serve the old build for one load before
+`registerType: "autoUpdate"` swaps it in. A hard reload (or DevTools →
+Application → Service Workers → Unregister) forces it immediately.
+
 ## 13. Project Structure
 
 ```
 .
-├── logic.cpp                     # Source of truth for all financial logic
-├── logo.png                      # Original app logo (source asset)
-├── src-assets/logo.png           # Copy used by the icon-generation script
-├── index.html                    # App shell (single page, no client router); references
-│                                  # the root logo.png directly (Vite hashes it as a build asset)
-├── public/
-│   └── icons/                    # Generated PWA/browser icons (committed)
+├── logic.cpp                      # Source of truth for all financial logic
+├── logo.png                       # Original logo supplied with the project
+├── src-assets/logo.png            # Input to the icon-generation script
+│
+├── app/                           # ─── SOURCE (Vite root) ───
+│   ├── index.html                 # App shell (single page, no client router)
+│   ├── public/icons/              # Generated PWA/browser icons (committed)
+│   └── src/
+│       ├── main.ts                # Entry: form wiring, recalculation, scroll-spy
+│       ├── styles.css             # Design system (tokens, components, light+dark)
+│       ├── assets/logo.png        # Optimised in-app brand mark
+│       ├── lib/
+│       │   ├── constants.ts       # Bank balance constants (mirrors logic.cpp)
+│       │   ├── validation.ts      # Mirrors getPositiveAmount / getPercentage
+│       │   ├── calculator.ts      # Exact port of the calculation core
+│       │   ├── analytics.ts       # Comparison + linear projection helpers
+│       │   └── format.ts          # PKR (2dp) / percent (4dp) formatting
+│       ├── ui/
+│       │   ├── render.ts          # KPI cards, tables/stacks, statement
+│       │   ├── charts.ts          # Chart.js comparison + projection charts
+│       │   ├── icons.ts           # Lucide icon layer (tree-shaken, inlined)
+│       │   ├── theme.ts           # light / dark / system toggle
+│       │   └── toast.ts           # Transient status messages
+│       └── pwa/install.ts         # Real beforeinstallprompt flow + iOS guide
+│
+├── index.html, assets/, icons/,   # ─── BUILT SITE (committed; what Pages serves) ───
+│   manifest.webmanifest, sw.js,
+│   registerSW.js, workbox-*.js,
+│   .nojekyll
+│
 ├── scripts/
-│   └── generate-icons.mjs        # Generates public/icons/* from src-assets/logo.png
-├── src/
-│   ├── main.ts                   # App entry: form wiring, recalculation, rendering
-│   ├── styles.css                # All styling (minimalist financial-dashboard theme)
-│   ├── lib/
-│   │   ├── constants.ts          # Bank balance constants (mirrors logic.cpp)
-│   │   ├── validation.ts         # Input validation (mirrors getPositiveAmount/getPercentage)
-│   │   ├── calculator.ts         # Exact port of the calculation core
-│   │   ├── analytics.ts          # Comparison + linear cumulative projection helpers
-│   │   └── format.ts             # PKR (2dp) / percent (4dp) formatting
-│   ├── ui/
-│   │   ├── render.ts             # KPI cards, tables, accountant-style statement
-│   │   ├── charts.ts             # Chart.js comparison + cumulative charts
-│   │   └── icons.ts              # Inline SVG icon set
-│   └── pwa/
-│       └── install.ts            # Real beforeinstallprompt-based install button
-├── tests/                        # Vitest unit tests (validation, calculator, analytics)
-├── .github/workflows/deploy.yml  # Build + deploy to GitHub Pages
-├── vite.config.ts                # Relative base + vite-plugin-pwa configuration
-├── TODO.md                       # Manually maintained build/verification checklist
+│   ├── generate-icons.mjs         # Icons + brand mark from src-assets/logo.png
+│   └── publish-to-root.mjs        # Copies dist/ to the repository root
+├── tests/                         # Vitest unit tests (validation, calculator, analytics)
+├── .github/workflows/deploy.yml   # Optional Actions-based Pages deployment
+├── vite.config.ts                 # Relative base, app/ root, vite-plugin-pwa
+├── TODO.md                        # Manually maintained build/verification checklist
 └── README.md
 ```
 
@@ -372,16 +426,17 @@ is covered:
   representative inputs.
 - Daily/weekly/monthly/annual, tax, ROI, comparison and cumulative figures
   checked against hand-computed expected values in `tests/`.
-- Chart rendering, mobile breakpoints, PWA manifest/service worker
-  validity, installability, refresh/navigation, and the production GitHub
-  Pages subpath were exercised manually against a real Chrome instance
-  driven over the DevTools Protocol (see `TODO.md` for the full log). One
-  caveat: full service-worker offline activation could not be confirmed on
-  the machine used for this review because its Chrome install has a local
-  `CacheStorage` fault (`caches.open()` throws in every profile tested,
-  independent of this app); re-verify offline behavior via DevTools →
-  Application on a different machine/profile if that matters for your
-  deployment.
+- Chart rendering, mobile breakpoints, theme switching, PWA
+  manifest/service worker, installability, refresh/navigation and the
+  production GitHub Pages subpath were exercised manually against real
+  Chrome — both via the browser extension and via the DevTools Protocol
+  (see `TODO.md` for the full log).
+- The service worker was confirmed registering, activating, precaching and
+  serving the app shell in a normal Chrome profile.
+- Chart colours are checked with a palette validator for colour-vision
+  deficiency separation, lightness band and surface contrast in both themes;
+  UI text and control borders are checked against WCAG AA (4.5:1) and
+  non-text contrast (3:1).
 
 Run the automated portion with:
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { calculate } from "../src/lib/calculator";
-import { buildCumulativeSeries, comparePeriodic } from "../src/lib/analytics";
+import { calculate } from "../app/src/lib/calculator";
+import { buildCumulativeSeries, comparePeriodic } from "../app/src/lib/analytics";
 
 describe("comparePeriodic", () => {
   const r = calculate({

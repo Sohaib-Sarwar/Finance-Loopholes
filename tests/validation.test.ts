@@ -4,7 +4,7 @@ import {
   PERCENTAGE_ERROR,
   validatePercentage,
   validatePositiveAmount,
-} from "../src/lib/validation";
+} from "../app/src/lib/validation";
 
 describe("validatePositiveAmount (mirrors getPositiveAmount)", () => {
   it("rejects empty input", () => {

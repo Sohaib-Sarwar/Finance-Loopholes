@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculate } from "../src/lib/calculator";
+import { calculate } from "../app/src/lib/calculator";
 
 // Every "expected" value below is computed with the exact same operation
 // order as logic.cpp (see comments citing line numbers there). Since both

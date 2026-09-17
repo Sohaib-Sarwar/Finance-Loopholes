@@ -1,24 +1,34 @@
 /// <reference types="vitest/config" />
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
-// GitHub Pages serves this project from a repository subpath
-// (https://USERNAME.github.io/REPOSITORY/), and the exact subpath is not
-// knowable at author time. Using a relative base ("./") makes every emitted
-// asset reference (JS, CSS, icons, manifest) relative to index.html instead
-// of rooted at "/", so the same build works unmodified from "/", from a
-// GitHub Pages project path, or from a local `vite preview` subpath.
+// Source lives in app/ and the production build is published to the repository
+// ROOT (see scripts/publish-to-root.mjs). That layout is what lets GitHub Pages
+// serve this site in its default "Deploy from a branch -> main -> / (root)"
+// mode: Pages copies the branch verbatim, so the files it finds at the root
+// must already be the compiled output, not TypeScript sources.
+//
+// base stays relative ("./") so the exact same build works from the domain
+// root, from a /REPOSITORY/ project path, or from a local preview subpath
+// without any rebuild.
 const BASE = "./";
 
 export default defineConfig({
+  root: "app",
   base: BASE,
   build: {
     target: "es2020",
-    sourcemap: true,
-    outDir: "dist",
+    outDir: "../dist",
+    emptyOutDir: true,
+    sourcemap: false,
+    cssMinify: true,
   },
+  // Vite's root is app/, but the test suite lives beside the repo root, so
+  // Vitest gets its own root back.
   test: {
     environment: "node",
+    root: fileURLToPath(new URL(".", import.meta.url)),
     include: ["tests/**/*.test.ts"],
   },
   plugins: [
@@ -35,17 +45,17 @@ export default defineConfig({
         name: "Combined MF + Bank ROI Calculator",
         short_name: "MF+Bank ROI",
         description:
-          "Production-grade Mutual Fund + Bank ROI analytics calculator with exact bank average-balance methodology.",
-        // Relative to the manifest file's own URL, so it resolves correctly
-        // whether the app is hosted at the domain root or at a GitHub Pages
-        // repository subpath.
+          "Mutual Fund + Bank ROI analytics with an exact fixed weekly bank average-balance methodology.",
+        // Relative to the manifest's own URL, so it resolves correctly whether
+        // the app is hosted at a domain root or a GitHub Pages subpath.
         start_url: ".",
         scope: "./",
         display: "standalone",
-        display_override: ["standalone", "browser"],
+        display_override: ["standalone", "minimal-ui", "browser"],
         orientation: "portrait-primary",
-        background_color: "#ffffff",
+        background_color: "#f5f5f3",
         theme_color: "#ffffff",
+        categories: ["finance", "productivity", "utilities"],
         icons: [
           {
             src: "icons/icon-192.png",
@@ -74,10 +84,12 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,png,svg,webmanifest}"],
-        // Every navigation falls back to the cached app shell so the app
-        // keeps working offline and after a hard refresh, even though the
-        // request URL differs per GitHub Pages subpath deployment.
+        globPatterns: ["**/*.{js,css,html,png,svg,webmanifest,woff2}"],
+        // The font CSS declares every Unicode subset, but browsers only fetch
+        // the ranges a page actually uses. Precaching the non-Latin subsets
+        // would add ~1 MB to the offline cache for glyphs this app never
+        // renders, so they stay network-only.
+        globIgnores: ["**/*{cyrillic,greek,vietnamese}*.woff2"],
         navigateFallback: `${BASE}index.html`,
         cleanupOutdatedCaches: true,
       },
