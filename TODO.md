@@ -34,6 +34,20 @@ Source of truth: `logic.cpp`. This checklist is maintained manually (no subagent
       registers/activates/precaches, install prompt fires, theme toggle,
       segmented controls, projection slider, validation errors, zero
       horizontal overflow at 320/390/768/1440 px.
+- [x] Resolved the workflow contention: `deploy.yml` and the newly added
+      `jekyll-gh-pages.yml` were both calling `actions/deploy-pages` and
+      fighting over the `pages` concurrency group (one run was cancelled).
+      `deploy.yml` is now CI-only and also fails if the committed root build
+      drifts from `app/`; Jekyll is the single deployer.
+- [x] **Verified on the production URL**
+      (`https://sohaib-sarwar.github.io/Finance-Loopholes/`): the page now
+      serves `assets/index-*.js` as `application/javascript` (previously raw
+      `src/main.ts` as `video/mp2t`, which browsers refused to execute);
+      manifest, service worker and icons all 200; service worker active and
+      scoped to the repo subpath with 17 precached entries; install button
+      offered; validation messages exact; Combined net annual renders
+      PKR 181,395.43 and the average bank balance PKR 682,285.71, matching
+      the hand-verified figures.
 
 ## 1. Analysis
 - [x] Read and fully understand `logic.cpp` (inputs, validation, bank model, formulas, output sections, disclaimers).
